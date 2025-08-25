@@ -6,10 +6,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/personal")
-@CrossOrigin(origins = {"http://localhost:3000"})
+@CrossOrigin(origins = "*") // permitir frontend React
 public class PersonalController {
 
     private final PersonalService personalService;
@@ -19,28 +20,38 @@ public class PersonalController {
     }
 
     @GetMapping
-    public List<Personal> getAll() {
-        return personalService.findAll();
+    public ResponseEntity<List<Personal>> getAll() {
+        return ResponseEntity.ok(personalService.getAll());
     }
 
     @GetMapping("/{id}")
-    public Personal getById(@PathVariable Long id) {
-        return personalService.findById(id);
+    public ResponseEntity<Personal> getById(@PathVariable UUID id) {
+        return personalService.getById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Personal create(@RequestBody Personal personal) {
-        return personalService.create(personal);
+    public ResponseEntity<Personal> create(@RequestBody Personal personal) {
+        return ResponseEntity.ok(personalService.save(personal));
     }
 
     @PutMapping("/{id}")
-    public Personal update(@PathVariable Long id, @RequestBody Personal personal) {
-        return personalService.update(id, personal);
+    public ResponseEntity<Personal> update(@PathVariable UUID id, @RequestBody Personal updated) {
+        return personalService.getById(id)
+                .map(existing -> {
+                    updated.setId(id); // aseguramos que actualiza
+                    return ResponseEntity.ok(personalService.save(updated));
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        personalService.delete(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        if (personalService.getById(id).isPresent()) {
+            personalService.delete(id);
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }
