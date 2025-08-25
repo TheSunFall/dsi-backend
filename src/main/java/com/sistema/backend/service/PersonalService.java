@@ -1,14 +1,11 @@
 package com.sistema.backend.service;
 
-import com.sistema.backend.dto.CreatePersonalDTO;
-import com.sistema.backend.dto.PersonalDTO;
 import com.sistema.backend.entity.Personal;
 import com.sistema.backend.repository.PersonalRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -20,51 +17,36 @@ public class PersonalService {
         this.personalRepository = personalRepository;
     }
 
-    public List<PersonalDTO> findAll() {
-        return personalRepository.findAll().stream().map(this::toDTO).collect(Collectors.toList());
+    public List<Personal> findAll() {
+        return personalRepository.findAll();
     }
 
-    public PersonalDTO findById(Long id) {
-        Personal personal = personalRepository.findById(id)
+    public Personal findById(Long id) {
+        return personalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Personal no encontrado"));
-        return toDTO(personal);
     }
 
-    public PersonalDTO create(CreatePersonalDTO dto) {
-        Personal personal = new Personal();
-        personal.setCodigo("EMP" + System.currentTimeMillis()); // código temporal
-        personal.setNombres(dto.getNombres());
-        personal.setApellidos(dto.getApellidos());
-        personal.setDni(dto.getDni());
-        personal.setTelefono(dto.getTelefono());
-        personal.setCorreoPersonal(dto.getCorreoPersonal());
-        personal.setDireccion(dto.getDireccion());
-        personal.setSexo(dto.getSexo());
+    public Personal create(Personal personal) {
+        // Reemplazar por un generador de código en Oracle
+        personal.setCodigo("EMP" + System.currentTimeMillis());
+        personal.setCorreoInstitucional(personal.getCodigo().toLowerCase() + "@empresa.pe");
+        return personalRepository.save(personal);
+    }
 
-        Personal saved = personalRepository.save(personal);
-        return toDTO(saved);
+    public Personal update(Long id, Personal datos) {
+        Personal existing = findById(id);
+        existing.setNombres(datos.getNombres());
+        existing.setApellidos(datos.getApellidos());
+        existing.setDni(datos.getDni());
+        existing.setTelefono(datos.getTelefono());
+        existing.setCorreoPersonal(datos.getCorreoPersonal());
+        existing.setDireccion(datos.getDireccion());
+        existing.setSexo(datos.getSexo());
+        existing.setFechaNacimiento(datos.getFechaNacimiento());
+        return personalRepository.save(existing);
     }
 
     public void delete(Long id) {
         personalRepository.deleteById(id);
-    }
-
-    private PersonalDTO toDTO(Personal personal) {
-        PersonalDTO dto = new PersonalDTO();
-        dto.setId(personal.getId());
-        dto.setCodigo(personal.getCodigo());
-        dto.setNombres(personal.getNombres());
-        dto.setApellidos(personal.getApellidos());
-        dto.setDni(personal.getDni());
-        dto.setTelefono(personal.getTelefono());
-        dto.setCorreoInstitucional(personal.getCorreoInstitucional());
-        dto.setCorreoPersonal(personal.getCorreoPersonal());
-        dto.setDireccion(personal.getDireccion());
-        dto.setFechaNacimiento(personal.getFechaNacimiento());
-        dto.setSexo(personal.getSexo());
-        dto.setFotoUrl(personal.getFotoUrl());
-        dto.setCreatedAt(personal.getCreatedAt());
-        dto.setUpdatedAt(personal.getUpdatedAt());
-        return dto;
     }
 }

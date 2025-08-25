@@ -1,9 +1,7 @@
 package com.sistema.backend.controller;
 
-import com.sistema.backend.dto.CreatePersonalDTO;
-import com.sistema.backend.dto.PersonalDTO;
+import com.sistema.backend.entity.Personal;
 import com.sistema.backend.service.PersonalService;
-import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,18 +19,23 @@ public class PersonalController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PersonalDTO>> getAll() {
-        return ResponseEntity.ok(personalService.findAll());
+    public List<Personal> getAll() {
+        return personalService.findAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PersonalDTO> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(personalService.findById(id));
+    public Personal getById(@PathVariable Long id) {
+        return personalService.findById(id);
     }
 
     @PostMapping
-    public ResponseEntity<PersonalDTO> create(@Valid @RequestBody CreatePersonalDTO dto) {
-        return ResponseEntity.ok(personalService.create(dto));
+    public Personal create(@RequestBody Personal personal) {
+        return personalService.create(personal);
+    }
+
+    @PutMapping("/{id}")
+    public Personal update(@PathVariable Long id, @RequestBody Personal personal) {
+        return personalService.update(id, personal);
     }
 
     @DeleteMapping("/{id}")
