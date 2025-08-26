@@ -23,12 +23,12 @@ public class EvaluacionDesempeno {
     private UUID id;
 
     // Relación con Personal
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "personal_id", nullable = false)
     private Personal personal;
 
     // Relación con Proyecto
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "proyecto_id", nullable = false)
     private Proyecto proyecto;
 

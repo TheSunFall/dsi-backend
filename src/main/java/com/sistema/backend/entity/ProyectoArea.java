@@ -20,7 +20,7 @@ public class ProyectoArea {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "proyecto_id", nullable = false)
     private Proyecto proyecto;
 

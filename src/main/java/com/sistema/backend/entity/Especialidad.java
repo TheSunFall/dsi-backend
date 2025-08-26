@@ -19,7 +19,7 @@ public class Especialidad {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "personal_id", nullable = false)
     private Personal personal;
 

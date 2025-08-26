@@ -20,12 +20,12 @@ public class PagoPersonal {
     private UUID id;
 
     // Relación con Personal
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "personal_id", nullable = false)
     private Personal personal;
 
     // Relación opcional con Proyecto
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "proyecto_id")
     private Proyecto proyecto;
 

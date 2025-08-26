@@ -20,12 +20,12 @@ public class PagoProveedor {
     private UUID id;
 
     // Relación con Proveedor
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "proveedor_id", nullable = false)
     private Proveedor proveedor;
 
     // Relación opcional con Proyecto
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "proyecto_id")
     private Proyecto proyecto;
 

@@ -20,7 +20,7 @@ public class ProveedorActividad {
     private UUID id;
 
     // Relación con proveedor_proyecto
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "proveedor_proyecto_id", nullable = false)
     private ProveedorProyecto proveedorProyecto;
 
