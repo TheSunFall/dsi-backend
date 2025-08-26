@@ -23,6 +23,7 @@ BEGIN
     BEGIN EXECUTE IMMEDIATE 'DROP TABLE EVALUACIONES_DESEMPENO CASCADE CONSTRAINTS'; EXCEPTION WHEN OTHERS THEN NULL; END;
     BEGIN EXECUTE IMMEDIATE 'DROP TABLE PROVEEDORES CASCADE CONSTRAINTS'; EXCEPTION WHEN OTHERS THEN NULL; END;
     BEGIN EXECUTE IMMEDIATE 'DROP TABLE PROYECTOS CASCADE CONSTRAINTS'; EXCEPTION WHEN OTHERS THEN NULL; END;
+    BEGIN EXECUTE IMMEDIATE 'DROP TABLE AUDITORIA CASCADE CONSTRAINTS'; EXCEPTION WHEN OTHERS THEN NULL; END;
 END;
 /
 
@@ -91,19 +92,22 @@ CREATE TABLE PERSONAL (
     updated_at TIMESTAMP WITH TIME ZONE
 );
 
-CREATE TABLE AUDITORIA (
+CREATE TABLE ESPECIALIDADES (
     id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
-    fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    usuario VARCHAR2(255 CHAR) DEFAULT 'Sistema' NOT NULL,
-    tabla VARCHAR2(255 CHAR) NOT NULL,
-    registro_id VARCHAR2(255 CHAR) NOT NULL,
-    campo VARCHAR2(255 CHAR) NOT NULL,
-    valor_anterior CLOB,
-    valor_nuevo CLOB,
-    operacion VARCHAR2(20 CHAR) NOT NULL, -- INSERT, UPDATE, DELETE
-    ip_address VARCHAR2(100 CHAR),
-    user_agent VARCHAR2(500 CHAR),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    personal_id RAW(16) NOT NULL,
+    especializacion VARCHAR2(200 CHAR) NOT NULL,
+    institucion VARCHAR2(200 CHAR) NOT NULL,
+    fecha_obtencion DATE,
+    fecha_vencimiento DATE,
+    horas NUMBER(10,0),
+    certificado_url CLOB,
+    certificado_nombre VARCHAR2(255 CHAR),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT fk_especialidades_personal
+        FOREIGN KEY (personal_id)
+        REFERENCES PERSONAL(id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE DATOS_LABORALES (
@@ -323,6 +327,32 @@ CREATE TABLE PERSONAL_TAREAS (
         ON DELETE CASCADE
 );
 
+CREATE TABLE PROVEEDOR_PROYECTO (
+    id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
+    proveedor_id RAW(16) NOT NULL,
+    proyecto_id RAW(16) NOT NULL,
+    servicio VARCHAR2(200 CHAR),
+    servicio_descripcion CLOB,
+    fecha_inicio DATE,
+    fecha_fin DATE,
+    monto NUMBER(10,2),
+    monto_total_contratado NUMBER(12,2),
+    fecha_contrato DATE,
+    estado VARCHAR2(50 CHAR) DEFAULT 'Activo',
+    contrato_pdf_url CLOB,
+    contrato_pdf_nombre VARCHAR2(255 CHAR),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT fk_proveedor_proyecto_proveedor
+        FOREIGN KEY (proveedor_id)
+        REFERENCES PROVEEDORES(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_proveedor_proyecto_proyecto
+        FOREIGN KEY (proyecto_id)
+        REFERENCES PROYECTOS(id)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE PROVEEDOR_ACTIVIDADES (
     id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
     proveedor_proyecto_id RAW(16) NOT NULL,
@@ -355,32 +385,6 @@ CREATE TABLE PROVEEDOR_DOCUMENTOS (
         ON DELETE CASCADE
 );
 
-CREATE TABLE PROVEEDOR_PROYECTO (
-    id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
-    proveedor_id RAW(16) NOT NULL,
-    proyecto_id RAW(16) NOT NULL,
-    servicio VARCHAR2(200 CHAR),
-    servicio_descripcion CLOB,
-    fecha_inicio DATE,
-    fecha_fin DATE,
-    monto NUMBER(10,2),
-    monto_total_contratado NUMBER(12,2),
-    fecha_contrato DATE,
-    estado VARCHAR2(50 CHAR) DEFAULT 'Activo',
-    contrato_pdf_url CLOB,
-    contrato_pdf_nombre VARCHAR2(255 CHAR),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE,
-    CONSTRAINT fk_proveedor_proyecto_proveedor
-        FOREIGN KEY (proveedor_id)
-        REFERENCES PROVEEDORES(id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_proveedor_proyecto_proyecto
-        FOREIGN KEY (proyecto_id)
-        REFERENCES PROYECTOS(id)
-        ON DELETE CASCADE
-);
-
 CREATE TABLE PROVEEDOR_SERVICIOS (
     id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
     proveedor_id RAW(16) NOT NULL,
@@ -409,6 +413,21 @@ CREATE TABLE PROYECTO_AREAS (
         FOREIGN KEY (proyecto_id)
         REFERENCES PROYECTOS(id)
         ON DELETE CASCADE
+);
+
+CREATE TABLE AUDITORIA (
+    id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
+    fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    usuario VARCHAR2(255 CHAR) DEFAULT 'Sistema' NOT NULL,
+    tabla VARCHAR2(255 CHAR) NOT NULL,
+    registro_id VARCHAR2(255 CHAR) NOT NULL,
+    campo VARCHAR2(255 CHAR) NOT NULL,
+    valor_anterior CLOB,
+    valor_nuevo CLOB,
+    operacion VARCHAR2(20 CHAR) NOT NULL, -- INSERT, UPDATE, DELETE
+    ip_address VARCHAR2(100 CHAR),
+    user_agent VARCHAR2(500 CHAR),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================================================
@@ -578,20 +597,20 @@ END;
 /
 
 CREATE OR REPLACE FUNCTION crear_notificacion (
-    p_tipo            VARCHAR2,
-    p_titulo          VARCHAR2,
-    p_descripcion     CLOB,
-    p_fecha_evento    TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP,
-    p_prioridad       VARCHAR2 DEFAULT 'media',
-    p_personal_id     RAW(16) DEFAULT NULL,
-    p_proveedor_id    RAW(16) DEFAULT NULL,
-    p_proyecto_id     RAW(16) DEFAULT NULL,
-    p_datos_adicionales CLOB DEFAULT NULL
+    p_tipo            IN VARCHAR2,
+    p_titulo          IN VARCHAR2,
+    p_descripcion     IN CLOB,
+    p_fecha_evento    IN TIMESTAMP WITH TIME ZONE,
+    p_prioridad       IN VARCHAR2,
+    p_personal_id     IN RAW,
+    p_proveedor_id    IN RAW,
+    p_proyecto_id     IN RAW,
+    p_datos_adicionales IN CLOB
 ) RETURN RAW
 IS
     notification_id RAW(16);
 BEGIN
-    INSERT INTO notificaciones (
+    INSERT INTO NOTIFICACIONES (
         id,
         tipo,
         titulo,
@@ -603,7 +622,7 @@ BEGIN
         proyecto_id,
         datos_adicionales
     ) VALUES (
-        SYS_GUID(),          -- genera el UUID en Oracle
+        SYS_GUID(),
         p_tipo,
         p_titulo,
         p_descripcion,
@@ -808,7 +827,3 @@ COMMENT ON COLUMN auditoria.campo IS 'Campo específico que fue modificado';
 COMMENT ON COLUMN auditoria.valor_anterior IS 'Valor antes del cambio';
 COMMENT ON COLUMN auditoria.valor_nuevo IS 'Valor después del cambio';
 COMMENT ON COLUMN auditoria.operacion IS 'Tipo de operación: INSERT, UPDATE, DELETE';
-
--- Comentarios en funciones
-COMMENT ON FUNCTION audit_trigger_function() IS 'Función genérica para registrar cambios en auditoría';
-COMMENT ON FUNCTION limpiar_notificaciones_antiguas(INTEGER) IS 'Elimina notificaciones leídas más antiguas que el número de días especificado';
